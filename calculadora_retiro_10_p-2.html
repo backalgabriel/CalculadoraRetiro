@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Calcula mi Plan de Retiro - 10% Anual</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body{
+      font-family:Arial, sans-serif;
+      background: linear-gradient(135deg, #e0eafc, #cfdef3);
+      padding:20px;
+      min-height:100vh;
+    }
+    .container{
+      max-width:700px; 
+      margin:0 auto; 
+      background:rgba(255,255,255,0.98); 
+      padding:25px; 
+      border-radius:12px; 
+      box-shadow:0 8px 25px rgba(0,0,0,0.1);
+    } 
+    h1{text-align:center; color:#003366; font-weight:bold;}
+    label{display:block; margin-top:10px; font-weight:bold; color:#333;}
+    select, input{width:100%; padding:8px; margin-top:4px; border:1px solid #ccc; border-radius:6px;}
+    button{margin-top:15px; padding:10px 15px; border:none; border-radius:8px; background:#004085; color:white; cursor:pointer; font-size:16px;}
+    button:hover{background:#002752;}
+    #result{margin-top:20px; font-size:18px;}
+    #whatsappBtn{display:none; background:#25D366; margin-top:15px;}
+    canvas{margin-top:20px;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Calcula mi Plan de Retiro</h1>
+    <label>¿Cuál es tu edad actual?</label>
+    <input type="number" id="age" min="18" max="60" value="30">
+
+    <label>Ahorro mensual (MXN)</label>
+    <select id="monthly">
+      <option value="1500">$1,500</option>
+      <option value="2000">$2,000</option>
+      <option value="2500">$2,500</option>
+      <option value="3000">$3,000</option>
+      <option value="3500">$3,500</option>
+      <option value="4000">$4,000</option>
+      <option value="4500">$4,500</option>
+      <option value="5000">$5,000</option>
+    </select>
+
+    <label>Edad de retiro</label>
+    <select id="retireAge">
+      <option value="55">55</option>
+      <option value="60">60</option>
+      <option value="65">65</option>
+    </select>
+
+    <button onclick="calculate()">Calcular</button>
+
+    <div id="result"></div>
+    <button id="whatsappBtn">Contrata tu plan por WhatsApp</button>
+
+    <canvas id="chart" height="100"></canvas>
+  </div>
+
+<script>
+function calculate(){
+  const age = parseInt(document.getElementById("age").value);
+  const retireAge = parseInt(document.getElementById("retireAge").value);
+  const monthly = parseFloat(document.getElementById("monthly").value);
+
+  if(retireAge <= age){ alert("La edad de retiro debe ser mayor que la actual."); return; }
+
+  const months = (retireAge - age) * 12;
+  const annualRate = 0.10;
+  const monthlyRate = Math.pow(1 + annualRate, 1/12) - 1;
+
+  let balanceInv = 0;
+  let balanceBanco = 0;
+  const labels = [];
+  const dataInv = [];
+  const dataBanco = [];
+
+  for(let m=1; m<=months; m++){
+    balanceInv = balanceInv * (1 + monthlyRate) + monthly;
+    balanceBanco += monthly; // 0% rendimiento
+    if(m % 12 === 0){
+      labels.push(age + Math.floor(m/12));
+      dataInv.push(Math.round(balanceInv));
+      dataBanco.push(Math.round(balanceBanco));
+    }
+  }
+
+  const finalAmount = Math.round(balanceInv);
+  document.getElementById("result").innerHTML = 
+    `Capital estimado a los ${retireAge} años: <strong>$${finalAmount.toLocaleString()}</strong> MXN`;
+
+  const phone = "525582330723"; // Número con código de país
+  const message = encodeURIComponent(`Hola, quiero contratar mi plan de retiro. Tengo ${age} años y planeo ahorrar $${monthly} MXN al mes. La calculadora estimó que tendría $${finalAmount.toLocaleString()} MXN a los ${retireAge} años.`);
+  const waLink = `https://wa.me/${phone}?text=${message}`;
+  const waBtn = document.getElementById("whatsappBtn");
+  waBtn.style.display = "inline-block";
+  waBtn.onclick = () => window.open(waLink, "_blank");
+
+  const ctx = document.getElementById("chart").getContext("2d");
+  if(window.myChart) window.myChart.destroy();
+  window.myChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Con inversión 10% anual',
+          data: dataInv,
+          borderColor: '#007bff',
+          fill: false,
+          tension: 0.2
+        },
+        {
+          label: 'Ahorro en banco (0%)',
+          data: dataBanco,
+          borderColor: '#ff0000',
+          fill: false,
+          tension: 0.2
+        }
+      ]
+    },
+    options: { responsive: true }
+  });
+}
+</script>
+</body>
+</html>
